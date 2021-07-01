@@ -1,0 +1,130 @@
+---
+title: "LungMAP Project Lung Development"
+author: "Harsh Bhotika; Geremy Clair"
+date: "May 20, 2020"
+output: html_document
+html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme : darkly
+    code_folding: hide
+---
+
+```{r knit_options, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=6, echo = TRUE, results = TRUE, warning = FALSE, message=FALSE) 
+options(repos=structure(c(CRAN="https://mirror.ibcp.fr/pub/CRAN/")))
+```
+
+# Loading the data(Gene list) and the required Libraries
+The data contained in the file "Gene List Full.csv" containing a list of 258 genes for this search were loaded into the R environment.
+```{r load_data}
+genes <- read.csv(file.choose(), header = TRUE)
+View(genes)
+attach(genes)
+data.class(genes)
+summary(genes)
+```
+
+Loading the necessary Libraries (Note: If you updated R recently, then the latest version of these have to be re-installed.).
+```{r libraries}
+library(RISmed)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(tidytext)
+library(wordcloud)
+```
+
+# Load functions to fetch Publication data 
+Function to fetch publication data from the PubMed database. Change parameters "retmax", "mindate" and "maxdate" as per requirements.
+```{r fetch_data}
+fetch_gene_data<- function(gene=x, key_word= "alveolarization", exact_match=T){ 
+  if(missing(exact_match)){exact_match<-TRUE}
+  key_word<-tolower(key_word)
+  # if you get some object error, either reduce retmax or try removing it.
+  res1 <- EUtilsSummary(paste0(gene,' , "' , key_word,'"'), 
+                        type = "esearch", 
+                        db = "pubmed",
+                        datetype = "pdat",
+                        retmax = 1000,
+                        mindate = 1970, 
+                        maxdate = 2020)
+  fetch <- EUtilsGet(res1, type = "efetch", db = "pubmed")
+  
+  abstracts <- data.frame(title = fetch@ArticleTitle,
+                          abstract = fetch@AbstractText, 
+                          journal = fetch@Title,
+                          pmid = fetch@PMID, 
+                          year = fetch@YearPubmed)
+  
+  #if(exact_match==T){
+   # position <- agrep(key_word, paste(abstracts$title, abstracts$abstract, sep = ". "))
+    #abstracts <- abstracts[position[],]
+    #rownames(abstracts)=NULL}
+  
+  abstracts <- abstracts %>% mutate(abstract = as.character(abstract))
+  abstracts %>%
+    head()
+  return(abstracts)}
+```
+
+Function to run the search and compile the publication data returned in every search iteration.
+```{r compile_data}
+query_gene_keyword_Pubmed<-function(gene_list=x, key_word=y, exact_match=TRUE, waiting_time=0){
+  if(missing(exact_match)){exact_match<-TRUE}
+  if(missing(waiting_time)){waiting_time<-0}
+  gene_list<-as.character(t(gene_list)) # trick to make sure data frame converts to char
+  
+  final_data <- NULL
+  
+  for (i in 1:length(gene_list)){
+    x<- gene_list[i]
+    abstract_data <- fetch_gene_data(x, key_word=key_word, exact_match=T)
+    if(nrow(abstract_data)>0){
+    abstract_data<- cbind(gene_name=x,abstract_data)
+    final_data <- rbind(final_data, abstract_data)}
+    Sys.sleep(waiting_time)
+  }
+  
+  return(final_data)
+}
+```
+
+# Initiate the search and export the results
+Pass the required parameters in the function call below to initiate the search as per requirements i.e. change the "key_word" which is currenty set to "Lung development". (Note: The search takes time as the data lookup is huge).
+```{r initiate_search}
+export_data<-query_gene_keyword_Pubmed(genes,key_word = "Lung development", waiting_time = 5)
+```
+
+View and export the compiled data. Data will be saved in the default folder.
+```{r }
+View(export_data)
+write.csv(export_data, file= "PubMed_data.csv")
+```
+
+#Additional Analyses
+Plot a graph of the results by year. Change axis labels depending on the search paramaters above
+```{r plot_graph}
+export_data %>%
+  group_by(year) %>%
+  count() %>%
+  filter(year > 1970) %>%
+  ggplot(aes(year, n)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Pubmed Articles over the Years (1970 to 2020)", hjust = 1,
+       y = "Articles")
+```
+
+Create a word cloud of the words in the abstracts of the final results. Change parameters as per requirements.
+```{r wordcloud}
+cloud <- export_data %>%
+  unnest_tokens(word, abstract) %>%
+  anti_join(stop_words) %>%
+  count(word, sort = TRUE)
+
+cloud %>%
+  with(wordcloud(word, n, min.freq = 2, max.words = 100, colors = brewer.pal(8, "Dark2")), scale = c(8,.3), per.rot = .4)
+```
+Every PubMed Id has been manually curated to ensure a proper attribution of the keywords.

@@ -1,0 +1,12 @@
+Donor,Age_Days,Nominal_Age,Experiment,Channel Order,Channel
+D005,1,1 day ,hLM_Biop_D005_P,1,126
+D019,1,1 day ,hLM_Biop_D019_P,2,127N
+D004,5,1 wk ,hLM_Biop_D004_P,3,127C
+D047,12,2 wk ,hLM_Biop_D047_P,4,128N
+D020,24,1 mth,hLM_Biop_D020_P,5,128C
+D024,122,4 mth,hLM_Biop_D024_P,6,129N
+D031,213,7 mth,hLM_Biop_D031_P,7,129C
+D052,395,1 yr,hLM_Biop_D052_P,8,130N
+D012,730,2yr,hLM_Biop_D012_P,9,130C
+D007,1461,4 yr,hLM_Biop_D007_P,10,131
+D036,2922,8yr,hLM_Biop_D036_P,11,131C

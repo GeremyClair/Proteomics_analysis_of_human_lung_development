@@ -1,0 +1,42 @@
+Sample Inventory ID,D019-RML-BPS-2,D038-RML-BPS-2,D041-RML-BPS-2,D044-RML-BPS-2,D024-RML-BPS-2,D008-RML-BPS-2,D011-RML-BPS-2,D043-RML-BPS-2,D022-RML-BPS-2,D018-RML-BPS-2
+Donor Health Status,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease
+Age Of Donor,1 Days,1 Days,6 Days,6 Days,4 Months,20 Months,20 Months,21 Months,2 Years,3 Years
+Age number,1,1,6,6,4,20,20,21,2,3
+Age unit,Days,Days,Days,Days,Months,Months,Months,Months,Years,Years
+Age in days,1,2,6,8,121.6,608,608,656,881,1104
+ln(age in days +1),0.693147181,0.693147181,1.945910149,2.079441542,4.808927024,6.411818268,6.411818268,6.486160789,6.781057626,7.006695227
+Age Cohort,1. Neonate (up to 30 days),1. Neonate (up to 30 days),1. Neonate (up to 30 days),1. Neonate (up to 30 days),2. Infant (> 30 days and < 1 year),3. Child (>= 1 year and < 11 years),3. Child (>= 1 year and < 11 years),3. Child (>= 1 year and < 11 years),3. Child (>= 1 year and < 11 years),3. Child (>= 1 year and < 11 years)
+GA weeks at birth (for donors under 1 year),37,39,38,40,UNK,UNK,UNK,UNK,UNK,UNK
+GA addtl days at birth (for donors under 1 year),3,3,3,3,UNK,UNK,UNK,UNK,UNK,UNK
+CGA Weeks (for donors under 1 year),37,39,39,41,UNK,UNK,UNK,UNK,UNK,UNK
+CGA Days (for donors under 1 year),3,3,2,2,UNK,UNK,UNK,UNK,UNK,UNK
+Donor Sex,Male,Female,Male,Male,Male,Female,Female,Male,Male,Female
+Donor Race,White,Unknown or Not Reported,Unknown or Not Reported,White,Other,White,White,White,Other,White
+Donor Weight (kg),UNK,2.27,3.24,3.63,8.62,12.25,10.89,9.8,11.79,15
+Donor Weight Percentile,UNK,1.3,31,58,94,85,54,6.3,10,54
+Cause of Death,Congenital Anomaly,Congenital Anomaly,Anoxic/Hypoxic Brain Injury,Anoxic/Hypoxic Brain Injury,Trauma,Trauma,Anoxic/Hypoxic Brain Injury,Trauma,Trauma,Anoxic/Hypoxic Brain Injury
+Destination,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab,Pacific Northwest National Lab
+ClinPathDx,"37 wk at birth, anencephaly, nl lung growth, some autolysis",Anencephaly- brain anomaly,"38 wks at birth, nl growth, patchy acute pneumonia","Nuchal Cord, Hypoxic Ischemic Encephalopathy","Mild hypoplasia, mild inflammation",NL structure and development,NL structure and development,Anoxia/traumatic brain injury,"Head Trauma, 2nd blunt injury","Cardiac arrest, Drowning, No Lung Compromise (pO2 550)"
+Pathologist Overall Diagnostic Impression of RLL,"Normal structure and development
+Dilated airways with autolysis of bronchial epithelium
+Increased circulating hematopoietic cells
+Aspirated squames/meconium in terminal airspaces
+Septal edema
+Patchy acute hemorrhage",,"Normal growth
+Patchy acute pneumonia
+Patchy capillary congestion
+Single focus of periairway fibrosis/injury
+Mild medial thickening pulmonary arteries",,"Mildly deficient alveolar count for age
+Mild periairway and interstitial lymphocytic inflammation within few airways and alveoli containing clusters of neutrophils
+Increased alveolar macrophages","Normal structure and development
+Patchy mild atelectasis
+Patchy mild macrophage accumulation
+Few acute arterial thrombi
+","Normal structure and development
+Patchy mild organizing hemorrhage
+Patchy mild macrophage accumulation/inflammation
+",,,
+Tissue Type,Lung,Lung,Lung,Lung,Lung,Lung,Lung,Lung,Lung,Lung
+Primary Type,RML,RML,RML,RML,RML,RML,RML,RML,RML,RML
+Derivative Type,BPS,BPS,BPS,BPS,BPS,BPS,BPS,BPS,BPS,BPS
+Additive Type,Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation),Flash Frozen (no fixation)

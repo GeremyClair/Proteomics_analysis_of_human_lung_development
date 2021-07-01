@@ -1,0 +1,187 @@
+---
+title: 'Trend_Analysis'
+author: Lisa Bramer, Geremy Clair
+date: April 19, 2021
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme : cerulean
+    code_folding: hide
+---
+
+Set the knitR options
+```{r knit_options, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=6, echo = FALSE, results = TRUE, warning = FALSE, message=FALSE) 
+options(repos=structure(c(CRAN="https://cloud.r-project.org/")))
+```
+
+Load the necessary libraries
+```{r libraries}
+library(RomicsProcessor)
+library(tidyr)
+library(purrr)
+library(dplyr)
+library(datadr)
+```
+
+Set the working directory
+```{r directory}
+setwd("/Volumes/Lungmap/19 - Biopsie paper/Code/04_Transcriptomics/02_Trend_analysis/")
+```
+
+Read the transcript data
+```{r load_trdata}
+trdata = read.csv("./01_source files/CBL_BPS_transcriptomics.csv")
+colnames(trdata)<-gsub("\\..*","",colnames(trdata))
+```
+
+Read the metadata
+```{r}
+metadata<-read.csv(file="./01_source files/metadatatr.csv")
+colnames(metadata)<-gsub("\\..*","",colnames(metadata))
+```
+
+
+Read the Gene/protein correspondance table and add the correspondance
+```{r Uniprot_mapping}
+corr_table<-read.csv(file = "./01_source files/Gene_uniprot_Correspondance.csv")
+corr_table$corr<-paste0(corr_table$Gene,"@",corr_table$UniProt_Name)
+trdata$Gene[trdata$Gene %in% corr_table$Gene] <-corr_table$corr[match(trdata$Gene[trdata$Gene %in% corr_table$Gene],corr_table$Gene)]
+```
+
+Only the transcripts coding for proteins were conserved 
+```{r Uniprot_transcripts_only}
+truniprot<-trdata[grepl(pattern = "@",x = trdata$Gene),]
+```
+
+Place the transcript in a romicsProcessor object
+```{r romics_transcript object}
+romics_transcript<-romicsCreateObject(truniprot,metadata,main_factor = "Age Cohort")
+romics_transcript<-romicsZeroToMissing(romics_transcript)
+romics_transcript<-log2transform(romics_transcript)
+```
+
+Remove the transcripts with less than 2 quantitative values
+```{r}
+romics_transcript<-romicsFilterMissing(romics_transcript,percentage_completeness = 20,main_factor = "none")
+```
+
+prepare data for statistics
+```{r}
+## prepare data for statistics
+trdata<- cbind(Gene=rownames(romics_transcript$data), romics_transcript$data)
+
+melt_trdata = melt(trdata, id.var = "Gene")
+names(melt_trdata) = c("Gene", "Donor", "value")
+
+trmetadata<-t(metadata)
+colnames(trmetadata)<-tolower(gsub(" ","_",trmetadata[1,]))
+trmetadata<-trmetadata[-1,]
+colnames(trmetadata)[1] = "Donor"
+trmetadata<-data.frame(cbind(Donor=rownames(trmetadata),trmetadata))
+melt_all = merge(x = melt_trdata, y = trmetadata, by = "Donor")
+melt_all = melt_all[]
+
+byGene = melt_all %>% group_by(Gene)
+
+# filter out proteins without enough data to fit a model
+byGene_filt = byGene %>% dplyr::filter(sum(!is.na(value)) > 4)
+```
+
+Create a function to calculate the stats
+```{r stat_fn}
+      stat_fn = function(x){
+        # log transform age #
+        x$age_in_days<-as.numeric(x$age_in_days)
+        x$log_age = log(x$age_in_days+1)
+        
+        # fit linear and quadratic models #  
+        lin_mod = lm(value ~ log_age, data = x)
+        quad_mod = lm(value ~ poly(log_age,2), data = x)
+        
+        if(summary(lin_mod)$coeff[2,4] < 0.1){
+          trend_0.1 = "Linear"
+        }else{trend_0.1 = NA}
+        if(summary(quad_mod)$coeff[3,4] < 0.1){
+          trend_0.1 = "Quadratic"
+        }
+        
+        if(summary(lin_mod)$coeff[2,4] < 0.05){
+          trend_0.05 = "Linear"
+        }else{trend_0.05 = NA}
+        if(summary(quad_mod)$coeff[3,4] < 0.05){
+          trend_0.05 = "Quadratic"
+        }
+        
+        
+        lm_lin_p = summary(lin_mod)$coeff[2,4]
+        lm_lin_e = summary(lin_mod)$coeff[2,1]
+        qm_quad_p = summary(quad_mod)$coeff[3,4]
+        qm_quad_e = summary(quad_mod)$coeff[3,1]
+        
+        # fit loess model #
+        loess_mod = loess(value ~ log(age_in_days), data = x, span = 1)
+        loess_fitted = predict(loess_mod, newdata = data.frame(age_in_days = 1:2922))
+        loess_slps = diff(loess_fitted)
+        loess_dir = ifelse(loess_slps > 0, 1, -1)
+        loess_dir_changes = sum(loess_dir[-1] != loess_dir[-length(loess_dir)], na.rm = T)
+        if(!is.na(trend_0.1)){
+          if(trend_0.1 == "Quadratic"){loess_dir_changes = 1}
+          if(trend_0.1 == "Linear"){loess_dir_changes = 0}
+        }
+        
+        data.frame(
+          N_samples = sum(!is.na(x$value)), 
+          N_direction_changes = loess_dir_changes,
+          LM_linear_pvalue = lm_lin_p, 
+          LM_slope_estimate = lm_lin_e,
+          QM_quadratic_pvalue = qm_quad_p,
+          QM_quadratic_estimate = qm_quad_e
+        )
+        
+      }
+```
+
+
+perform the stats
+```{r perform_stats}
+Gene_list<- byGene_filt$Gene
+Gene_list<- Gene_list[!duplicated(Gene_list)]
+
+for (i in 1:length(Gene_list)){
+  generesult<-byGene_filt[byGene_filt$Gene==Gene_list[i],]
+  generesult<-cbind(Gene=Gene_list[i],stat_fn(generesult))
+  if(i==1){df<-generesult}else{df<-rbind(df,generesult)}
+}
+
+stat_results<-merge(df,trdata,by="Gene",all=T)
+```
+
+Determine the best fitted trend
+```{r determine_best_fitted_trend}
+stat_results$trend = "None"
+for(i in 1:nrow(stat_results)){
+  if(is.na(stat_results$LM_linear_pvalue[i])){stat_results$trend[i]="<4 samples"}else{
+  if(stat_results$LM_linear_pvalue[i]<0.05|stat_results$QM_quadratic_pvalue[i]<0.05){
+    if(stat_results$LM_linear_pvalue[i]<stat_results$QM_quadratic_pvalue[i]){
+      if(stat_results$LM_slope_estimate[i]>0){stat_results$trend[i]<-"linear_increasing"}else{stat_results$trend[i]<-"linear_decreasing"}
+    }else{
+      if(stat_results$QM_quadratic_estimate[i]>0){stat_results$trend[i]<-"quadratic_convex"}else{stat_results$trend[i]<-"quadratic_concave"}
+    }
+  }
+  }
+}
+par(mar=c(10,10,5,5))
+barplot(table(stat_results$trend)[c(-1,-4)],xlab="trend",las=2)
+```
+
+The result table is then exported
+```{r export_table}
+write.csv(stat_results,file="./03_output_files/transcriptomics_stat.csv")
+```
+
+
+
+

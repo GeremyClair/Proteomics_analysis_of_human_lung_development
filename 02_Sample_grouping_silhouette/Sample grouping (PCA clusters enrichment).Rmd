@@ -1,0 +1,195 @@
+---
+title: 'Biopsies sample grouping (PCA, age clusters)'
+author: Geremy Clair
+date: May 4, 2020
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme : darkly
+    code_folding: hide
+---
+
+```{r knit_options, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=6, echo = TRUE, results = TRUE, warning = FALSE, message=FALSE) 
+options(repos=structure(c(CRAN="https://mirror.ibcp.fr/pub/CRAN/")))
+setwd("~/Documents/05 - Lungmap/01 - Biopsie paper/Proteins/")
+```
+
+# Data loading and cleaning
+Load the necessary libraries
+```{r libraries}
+#load reshape for melting tables
+library(FactoMineR)
+library(ggplot2)
+library(ggfortify)
+library(viridis)
+library(cluster)
+library(factoextra)
+```
+
+The data contained in the file "protein abundances.csv" and its corresponding metadata ("metadata.csv") were loaded  in the R environment.
+```{r loading_data}
+#load the data
+proteins <-read.csv("Protein abundances.csv")
+rownames(proteins)<- proteins[,1]
+proteins<-proteins[,2:ncol(proteins)]
+
+#load the metadata
+metadata <- read.csv("metadata.csv")
+rownames(metadata)<-metadata[,1]
+metadata<-data.frame(t(metadata[,2:ncol(metadata)]))
+```
+
+The rows containing missing values were removed
+```{r remove_missing}
+paste0(sum(rowSums(is.na(proteins))>0)," rows were containing missing values and were removed.")
+proteins<-proteins[rowSums(is.na(proteins))==0,]
+```
+
+# PCA
+
+The PCA was performed  using the function PCA() from FactoMineR.
+```{r PCA}
+PCA_results<-PCA(t(proteins),graph =F)
+PCA_coord<-data.frame(PCA_results$ind$coord)
+age_in_days<-as.numeric(as.character(metadata$age_in_days))
+logAge<-log10(age_in_days)
+PCA_coord<-data.frame(cbind(PCA_coord,age_in_days=age_in_days,log_age=logAge))
+```
+
+The individual coordinates were plotted
+```{r PCA_plot}
+ggplot(PCA_coord,aes(x=Dim.1,y=Dim.2)) + 
+  geom_point(size=4,aes(colour=log_age))+
+  scale_color_viridis()+ 
+  geom_text(aes(label=paste0(rownames(PCA_coord)," (",PCA_coord$age_in_days,")")))+
+  ggtitle("Principal Component Analysis") +
+  xlab(paste0("PC1(",round(PCA_results$eig[,2][1],2),"%)"))+
+  ylab(paste0("PC2(",round(PCA_results$eig[,2][2],2),"%)"))
+```
+
+# Grouping evaluation
+
+Two main groups by age separated by the component 1 were clearly distinct here. Each group presented two sub age groups separated by the second component
+
+## main grouping
+
+We used gap a silhouette analysis to determine the best number of k-mean clusters (using the package FactoExtra).
+```{r Silhouette_main_groups}
+fviz_nbclust(t(proteins), kmeans, method = "silhouette", k.max = 10) + theme_bw() + ggtitle("The Silhouette Plot")
+```
+
+2 main clusters were found, the K-means groups were determined for these two clusters
+```{r kmeans_main_groups}
+k<-kmeans(t(proteins),2)
+print("the clusters were the following")
+print(k$cluster)
+```
+
+The clusters were used to color the PCA plot
+```{r PCA_main_groups}
+#pdf("PCA_plot.pdf", height = 5, width = 6,useDingbats=FALSE)
+ggplot(PCA_coord,aes(x=Dim.1,y=Dim.2)) + 
+  geom_point(size=4,aes(colour=as.factor(k$cluster)))+
+  scale_color_manual(values=c("#2e4057","#d1495b"),name="K-cluster")+
+  geom_text(aes(label=paste0(rownames(PCA_coord)," (",PCA_coord$age_in_days,")")))+
+  ggtitle("Principal Component Analysis") +
+  xlab(paste0("PC1(",round(PCA_results$eig[,2][1],2),"%)"))+
+  ylab(paste0("PC2(",round(PCA_results$eig[,2][2],2),"%)"))+
+  theme_bw()
+#dev.off()
+```
+
+##  Sub-grouping
+
+In order to identify it the subgroup were validated by the same method we subsetted the whole table into two tables corresponding to the two subgroups
+```{r K_mean_sub_groups}
+#create the first subset for K-Cluster 1
+proteins_1<-proteins[,k$cluster==1]
+
+#Evaluate the best number of clusters using the silouhette method
+fviz_nbclust(t(proteins_1), kmeans, method = "silhouette", k.max = 4) + theme_bw() + ggtitle("The Silhouette Plot (K-Cluster 1)")
+
+#Calculate the sub-clusters
+k1<-kmeans(t(proteins_1),2)
+
+#print the results
+print("The best K-subClusters for protein_1 were the following")
+print(k1$cluster)
+
+#create the second subset for K-Cluster 2
+proteins_2<-proteins[,k$cluster==2]
+
+#Evaluate the best number of clusters using the silouhette method
+fviz_nbclust(t(proteins_2), kmeans, method = "silhouette", k.max = 4) + theme_bw() + ggtitle("The Silhouette Plot (K-Cluster 2)")
+
+#Calculate the sub-clusters
+k2<-kmeans(t(proteins_2),2)
+
+#print the results
+print("The best K-subClusters for protein_2 were the following")
+print(k2$cluster)
+```
+
+The PCA plot showing these 2 main and their 2 subclusters was plotted
+```{r PCA_plot_sub_groups}
+#a cluster and sub_cluster table was created
+k_clust<-data.frame(main_clusters=k$cluster)
+sc_1<-k1$cluster
+sc_2<-k2$cluster
+sub_cluster<-c(sc_1,sc_2)
+sub_cluster<-sub_cluster[match(names(sub_cluster),rownames(k_clust))]
+k_clust<-cbind(k_clust,sub_cluster=sub_cluster)
+clusters<-paste0(k_clust$main_clusters,"_",k_clust$sub_cluster)
+k_clust<-cbind(k_clust,clusters=clusters)
+
+#and the results were used to color the PCA
+#pdf("PCA_plot.pdf", height = 5, width = 6,useDingbats=FALSE)
+ggplot(PCA_coord,aes(x=Dim.1,y=Dim.2)) + 
+  geom_point(size=4,aes(colour=as.factor(k_clust$clusters)))+
+  scale_color_manual(values=c("#317bf4","#2e4057","#cc0000","#f28888"),name="K-cluster")+
+  geom_text(aes(label=paste0(rownames(PCA_coord)," (",PCA_coord$age_in_days,")")))+
+  ggtitle("Principal Component Analysis") +
+  xlab(paste0("PC1(",round(PCA_results$eig[,2][1],2),"%)"))+
+  ylab(paste0("PC2(",round(PCA_results$eig[,2][2],2),"%)"))+
+  theme_bw()
+#dev.off()
+
+```
+
+As these four subgroups were corresponding to the four quadrant of the PCA we investigated the proteins with the most weight in the separation, to do so we have plotted the distribution of the eigenvalues
+```{r extract_PCA_contrib}
+#let's extract the contributions from the PCA Results
+PC_contrib<-data.frame(PCA_results$var$contrib)
+PC1_contrib<-data.frame(PC_contrib$Dim.1)
+PC2_contrib<-data.frame(PC_contrib$Dim.2)
+rownames(PC1_contrib)<-rownames(PC2_contrib)<-rownames(PC_contrib)
+```
+
+Now we will extract the percentage of contribution of the proteins quantified to PC1 and PC2 and plot the distribution of the contributions
+```{r plot_percentage_contrib_distrib}
+#the -log10 of the PCA contributions were calculated for visualization purposes
+PC1_contrib$'minus_log10_contrib'<--log10(PC1_contrib$PC_contrib.Dim.1)
+PC2_contrib$'minus_log10_contrib'<--log10(PC2_contrib$PC_contrib.Dim.2)
+
+#plot the distribution of the log transformed contributions
+ggplot(PC1_contrib,aes(minus_log10_contrib))+ geom_histogram(binwidth = 0.1)
+ggplot(PC2_contrib,aes(minus_log10_contrib))+ geom_histogram(binwidth = 0.1)
+
+#extract the list of top 500 proteins contributing the most to component 1 and 2
+PC1_contrib<- PC1_contrib[order(PC1_contrib$minus_log10_contrib),]
+PC2_contrib<- PC2_contrib[order(PC2_contrib$minus_log10_contrib),]
+```
+
+# Version R and of the packages used
+
+```{r packages_version}
+print(paste0("R version ", version$major,".",version$minor, " was used for this analysis."))
+packages<-data.frame(installed.packages())
+loaded<-as.character(.packages())
+print("Below is the version of the packages used for this analysis.")
+print(packages[packages$Package %in% loaded,c(1,3)])
+```
+

@@ -1,0 +1,120 @@
+## code for unzipping file
+#!/bin/bash
+#SBATCH -J unzip-3
+#SBATCH -e unzip-3.err
+#SBATCH -o unzip-3.out
+#SBATCH -t 96:00:00
+#SBATCH -p pedsome
+#SBATCH -A pedsome
+
+# load desired modules
+
+
+cd $SBATCH_O_WORKDIR
+
+echo Running on host `hostname`
+echo Time is `date`
+echo "Started: $( date )"
+
+gunzip /gpfs/fs2/scratch/tmariani_group/incoming/*.gz
+
+echo "submitted '$jobid'"
+echo "Ended: $( date )"
+----------------------------------------------------------------
+## code for alignment
+#!/bin/bash 
+
+#SBATCH -J starmap
+#SBATCH -e starmap.err
+#SBATCH -o starmap.out
+#SBATCH --mem=128GB
+#SBATCH --ntasks-per-node=8
+#SBATCH --mail-type=all
+#SBATCH -t 120:00:00
+#SBATCH -p standard
+
+# load desired modules
+module load STAR/2.6.0c-foss-2016b
+
+
+cd $SBATCH_O_WORKDIR
+
+echo Running on host "hostname"
+echo Time is "date"
+echo "Started: $( date )"
+
+STAR --runThreadN 6 \
+--runMode genomeGenerate \
+--genomeDir chr1_hg38_index \
+--genomeFastaFiles ....path to directory//reference/human/Homo_sapiens/NCBI/build38.2/Annotation/Archives/reference_data_ensembl38/Homo_sapiens.GRCh38.dna.chromosome.1.fa \
+--sjdbGTFfile .....path to directory/reference/human/Homo_sapiens/NCBI/build38.2/Annotation/Archives/reference_data_ensembl38/Homo_sapiens.GRCh38.2.gtf \
+--sjdbOverhang 99
+
+STAR --genomeDir ....path to directory/sample_id/reference_data_ensembl38/ensembl38_STAR_index/ \
+--runThreadN 6 \
+--readFilesIn sampleid_R1.fastq \
+--outFileNamePrefix ../results/STAR/sampleId_ \
+--outSAMtype BAM SortedByCoordinate \
+--outSAMunmapped Within \
+--outSAMattributes Standard 
+
+
+echo "submitted '$jobid"
+echo "Ended: $( date )"
+
+
+----------------------------------------------------------------
+##code for count generation
+#!/bin/bash
+
+#SBATCH -J bulkseqcount
+#SBATCH -e bulkseqcount.err
+#SBATCH -o bulkseqcount.out
+#SBATCH -t 120:00:00
+#SBATCH --mem=128GB
+#SBATCH --ntasks-per-node=8
+#SBATCH --mail-type=all
+#SBATCH -p pedsome
+#SBATCH -A pedsome
+
+
+# load desired modules
+module load samtools
+module load htseq
+
+cd $SBATCH_O_WORKDIR
+
+echo Running on host `hostname`
+echo Time is `date`
+"echo ""Started: $( date )"""
+
+samtools view -h- <....path to directory/sample_id/accepted_hits.bam | htseq-count --stranded=no  --mode=intersection-strict - <...path to directory/reference/human/Homo_sapiens/NCBI/build37.2/Annotation/Archives/archive-2014-03-21-09-31-32/Genes/genes.gtf > <...path to directory/sam/rawcounts/sample_id.count.txt
+
+
+"echo ""submitted '$jobid'"""
+"echo ""Ended: $( date )"""
+
+
+------------------------------------------------------------
+##code for normalizing counts
+#install.packages("htmltools")
+#library(htmltools)
+#source("https://bioconductor.org/biocLite.R")
+#biocLite("DESeq2")
+
+library( "DESeq2" )
+library(ggplot2)
+
+# Read in the raw read counts
+rawCounts <- read.delim("...path to directory/lungMAP-raw-counts.tsv")
+head(rawCounts)
+
+# Read in the sample mappings
+sampleData <- read.delim("...path to directory/lungMAP-phenodata.tsv")
+head(sampleData)
+
+deseq2Data <- DESeqDataSetFromMatrix(countData=rawCounts, colData=sampleData, design= ~ cellType)
+
+# Transform count data using the variance stablilizing transform
+deseq2VST <- vst(deseq2Data)
+

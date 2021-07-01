@@ -1,0 +1,327 @@
+---
+title: 'Trend_Analysis'
+author: Lisa Bramer, Geremy Clair
+date: April 19, 2021
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme : cerulean
+    code_folding: hide
+---
+
+Set the knitR options
+```{r knit_options, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=6, echo = FALSE, results = TRUE, warning = FALSE, message=FALSE) 
+options(repos=structure(c(CRAN="https://cloud.r-project.org/")))
+```
+
+Load the necessary libraries
+```{r libraries}
+library(pmartR)
+library(ggplot2)
+library(reshape2)
+library(tidyr)
+library(purrr)
+library(dplyr)
+library(ggpubr)
+library(DT)
+library(datadr)
+```
+
+Set the working directory
+```{r directory}
+setwd("/Volumes/Lungmap/19 - Biopsie paper/Code/01_Trend_analysis/")
+```
+
+Read the peptide data
+```{r pep_data}
+pepdata = read.csv("./01_source files/TMT_Peptides_with_column_header.csv")
+```
+
+Create PmartR e_data 
+```{r e_data}
+edata = pepdata[,c(2,5:ncol(pepdata))]
+```
+
+Parse column names to match meta data file #
+```{r parse_colnames}
+names(edata)[-1] = unlist(lapply(strsplit(names(edata)[-1], "_"), function(x) x[1]))
+```
+
+Pull out e_meta 
+```{r e_meta}
+emeta = pepdata[,1:4]
+```
+
+Read in f_data 
+```{r f_data}
+fdata = read.csv("./01_source files/TMT_metadata.csv")
+```
+
+Create some extra columns related to age 
+```{r age_cols}
+fdata$Age_Group = c("Days", "Days", "Days", "Days", "Months", "Months", "Months", "Years", "Years", "Years", "Years")
+fdata$Age_Days = c(1,1,7,14,30.44, 4*30.44, 7*30.44, 365.242, 2*365.242, 4*365.242, 8*365.242)
+fdata$Ln_Age_Days_plus1 = log(fdata$Age_Days+1)
+```
+
+# save data as pepData object 
+```{r create_pepData}
+mydata = as.pepData(e_data = edata, f_data = fdata, e_meta = emeta, edata_cname = "Peptide", fdata_cname = "Donor", emeta_cname = "Protein")
+```
+
+replace 0's with NA's
+```{r zeros_to_NA}
+mydata = edata_replace(omicsData = mydata, x = 0, y = NA)
+```
+
+generate a qqplot prior normalization
+```{r qqplot_pre_norm}
+m<-mydata$e_data[,2:ncol(mydata$e_data)]
+meltedm<-melt(m)
+meltedm<-meltedm[!is.na(meltedm$value),]
+ggqqplot(meltedm$value)+ggtitle("qqplot_prior_transformation")
+```
+
+
+Evaluate normality prior normalization using a Wilk shapiro test on 5000 proteins drawned randomly for each sample (R Shapiro test is limited to 5000 entities)
+```{r normality_test_prior}
+# draw random rows in the data
+set.seed(7)
+r<-sample.int(nrow(mydata$e_data),5000)
+# extract data
+m<-mydata$e_data[r,2:ncol(mydata$e_data)]
+
+#run Wilk_shapiro normality test
+SW_test<-lapply(m,shapiro.test)
+
+#extract W and pvalue
+W<-numeric()
+p<-numeric()
+s<-paste0(colnames(m),"_prior_log_norm")
+for(i in 1:length(SW_test)){
+  W[i]<-SW_test[[i]]$statistic
+  p[i]<-SW_test[[i]]$p.value
+}
+
+pre_norm_SW<-data.frame(sample=s,W=W,p.value=p)
+print("the prenormalization table Wilk-shapiro test results are displayed below")
+datatable(pre_norm_SW)
+
+```
+
+replace zeros by NAs
+```{r NA_replacement}
+mydata = edata_replace(omicsData = mydata, x = 0, y = NA)
+```
+
+log2 transform the data, generate the qqplot and a distribution histogram for each sample
+```{r log2_transform}
+mydata_log2 = edata_transform(mydata, "log2")
+m<-mydata_log2$e_data[,2:ncol(mydata_log2$e_data)]
+meltedm<-melt(m)
+meltedm<-meltedm[!is.na(meltedm$value),]
+ggqqplot(meltedm$value)+ggtitle("qqplot_prior_transformation")
+ggplot(meltedm,aes(value))+geom_histogram(bins=100)+ggtitle("global data frequency histrogram")
+ggplot(meltedm,aes(value))+geom_histogram(bins=100)+ggtitle("data frequency histogram (per sample)")+facet_wrap(~variable)
+ggplot(meltedm,aes(x=variable, y=value))+geom_boxplot(aes(fill=variable))+ggtitle("boxplot (per sample)")
+```
+
+Evaluate normality after log_transform using a Wilk shapiro test on 5000 proteins drawned randomly for each sample (R Shapiro test is limited to 5000 entities)
+```{r normality_test_after}
+# extract data (using the same draw as prior)
+m<-mydata_log2$e_data[r,2:ncol(mydata_log2$e_data)]
+
+#run Wilk_shapiro normality test
+SW_test<-lapply(m,shapiro.test)
+
+#extract W and pvalue
+W<-numeric()
+p<-numeric()
+s<-paste0(colnames(m),"_post_norm")
+for(i in 1:length(SW_test)){
+  W[i]<-SW_test[[i]]$statistic
+  p[i]<-SW_test[[i]]$p.value
+}
+
+post_norm_SW<-data.frame(sample=s,W=W,p.value=p)
+
+#display results and plot the prior and after normalization WS test W values
+SW<-rbind(pre_norm_SW, post_norm_SW)
+print("the pre-normalization and post-normalization table Wilk-shapiro test results prior and after norm")
+datatable(SW)
+SW$sample<-factor(SW$sample, levels =SW$sample)
+
+ggplot(SW,aes(x=W,y=sample))+geom_bar(stat="identity")+ggtitle("W from Wilk-shapiro test")
+
+```
+
+remove contaminants
+```{r contaminant_rm}
+# find proteins that are contiaminants #
+prots_rmv = pepdata$Protein[grep("Contaminant", pepdata$Protein)]
+# contaminant filter #
+contam_filt = custom_filter(e_meta_remove = as.character(prots_rmv), omicsData = mydata_log2)
+# apply the contaminant filter #
+mydata1 = applyFilt(contam_filt, mydata_log2)
+```
+
+remove misidentifications
+```{r missidentifications_rm}
+# find proteins that are misidentifications #
+mis_ids = grep("XXX", mydata1$e_meta$Protein, value = T)
+# create filter for misidentified proteins #
+misid_filt = custom_filter(mydata1, e_meta_remove = mis_ids)
+# apply misidentification filter #
+mydata2 = applyFilt(misid_filt, mydata1)
+```
+
+create filter to remove proteins with less than two peptides
+```{r}
+# create filter to remove proteins with too few peptides
+myfilt = proteomics_filter(mydata2)
+# remove proteins with only one peptide observed
+mydata3 = applyFilt(myfilt, mydata2, min_num_peps = 2)
+```
+
+create filter to remove proteins with too few peptides
+```{r low_pep_filt}
+# create filter to remove proteins with too few peptides
+myfilt = proteomics_filter(mydata2)
+# remove proteins with only one peptide observed
+mydata3 = applyFilt(myfilt, mydata2, min_num_peps = 2)
+```
+
+create filter to remove peptides observed only in one sample
+```{r low_count_filt}
+# create filter to remove peptides based on non-missing values
+myfilt2 = molecule_filter(mydata3)
+# remove peptides observed in only one sample
+mydata4 = applyFilt(myfilt2, mydata3)
+```
+
+perform a median nomalization
+```{r median_norm}
+# normalize the data #
+norm_data = normalize_global(mydata4, subset_fn = "all", norm_fn = "median", apply_norm = T, backtransform = T)
+m<-norm_data$e_data[,2:ncol(norm_data$e_data)]
+meltedm<-melt(m)
+meltedm<-meltedm[!is.na(meltedm$value),]
+ggplot(meltedm,aes(value))+geom_histogram(bins=100)+ggtitle("data frequency histogram (per sample)")+facet_wrap(~variable)
+ggplot(meltedm,aes(x=variable, y=value))+geom_boxplot(aes(fill=variable))+ggtitle("boxplot (per sample)")
+
+```
+
+rollup the peptide information to the protein level
+```{r rrollup}
+prodata = protein_quant(norm_data, method = "rrollup", use_parallel = F)
+```
+
+run group designation
+```{r}
+prodata_grouped = group_designation(prodata, main_effects = "Age_Group")
+```
+
+run sppca
+```{r}
+pca_grouped = dim_reduction(prodata_grouped)
+full_pca = pcaMethods::pca(t(as.matrix(prodata_grouped$e_data[,-1])), method = "ppca", scale = "vector")
+```
+
+prepare data for statistics
+```{r}
+## prepare data for statistics
+melt_edata = melt(prodata$e_data, id.var = "Protein")
+names(melt_edata) = c("Protein", "Donor", "value")
+peps_per_pro = norm_data$e_meta %>% group_by(Protein) %>% summarise(N = n())
+melt_all = merge(x = melt_edata, y = prodata$f_data, by = "Donor")
+melt_all2 = merge(x = melt_all, y = peps_per_pro, by = "Protein", all.x = T, all.y = F)
+# divide the data by protein 
+byProt = melt_all2 %>% group_by(Protein)
+# filter out proteins without enough data to fit a model
+byProt_filt = byProt %>% dplyr::filter(sum(!is.na(value)) > 4)
+```
+
+
+Create a function to calculate the stats
+```{r stat_fn}
+      stat_fn = function(x){
+        # log transform age #
+        x$log_age = log(x$Age_Days + 1)
+        
+        # fit linear and quadratic models #  
+        lin_mod = lm(value ~ log_age, data = x)
+        quad_mod = lm(value ~ poly(log_age,2), data = x)
+        
+        if(summary(lin_mod)$coeff[2,4] < 0.1){
+          trend_0.1 = "Linear"
+        }else{trend_0.1 = NA}
+        if(summary(quad_mod)$coeff[3,4] < 0.1){
+          trend_0.1 = "Quadratic"
+        }
+        
+        if(summary(lin_mod)$coeff[2,4] < 0.05){
+          trend_0.05 = "Linear"
+        }else{trend_0.05 = NA}
+        if(summary(quad_mod)$coeff[3,4] < 0.05){
+          trend_0.05 = "Quadratic"
+        }
+        
+        
+        lm_lin_p = summary(lin_mod)$coeff[2,4]
+        lm_lin_e = summary(lin_mod)$coeff[2,1]
+        qm_quad_p = summary(quad_mod)$coeff[3,4]
+        qm_quad_e = summary(quad_mod)$coeff[3,1]
+        
+        # fit loess model #
+        loess_mod = loess(value ~ log(Age_Days), data = x, span = 1)
+        loess_fitted = predict(loess_mod, newdata = data.frame(Age_Days = 1:2922))
+        loess_slps = diff(loess_fitted)
+        loess_dir = ifelse(loess_slps > 0, 1, -1)
+        loess_dir_changes = sum(loess_dir[-1] != loess_dir[-length(loess_dir)], na.rm = T)
+        if(!is.na(trend_0.1)){
+          if(trend_0.1 == "Quadratic"){loess_dir_changes = 1}
+          if(trend_0.1 == "Linear"){loess_dir_changes = 0}
+        }
+        
+        data.frame(
+          N_peptides = x$N[1],
+          N_samples = sum(!is.na(x$value)), 
+          N_direction_changes = loess_dir_changes,
+          LM_linear_pvalue = lm_lin_p, 
+          LM_slope_estimate = lm_lin_e,
+          QM_quadratic_pvalue = qm_quad_p,
+          QM_quadratic_estimate = qm_quad_e
+        )
+        
+      }
+```
+
+
+perform the stats
+```{r perform_stats}
+# process the data
+byProt_stat_res = byProt_filt %>% nest() %>% mutate(stat_res = map(data, stat_fn))
+# pull out statistics results
+stat_results = byProt_stat_res %>% dplyr::select(Protein, stat_res) %>% unnest(stat_res)
+```
+
+Determine the best fitted trend
+```{r determine_best_fitted_trend}
+stat_results$trend = "None"
+for(i in 1:nrow(stat_results)){
+  if(stat_results$LM_linear_pvalue[i]<0.05|stat_results$QM_quadratic_pvalue[i]<0.05){
+    if(stat_results$LM_linear_pvalue[i]<stat_results$QM_quadratic_pvalue[i]){
+      if(stat_results$LM_slope_estimate[i]>0){stat_results$trend[i]<-"linear_increasing"}else{stat_results$trend[i]<-"linear_decreasing"}
+    }else{
+      if(stat_results$QM_quadratic_estimate[i]>0){stat_results$trend[i]<-"quadratic_convex"}else{stat_results$trend[i]<-"quadratic_concave"}
+    }
+  }
+}
+par(mar=c(10,10,5,5))
+barplot(table(stat_results$trend)[-3],xlab="trend",las=2)
+```
+
+

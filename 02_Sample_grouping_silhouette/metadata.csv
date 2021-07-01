@@ -1,0 +1,66 @@
+Donor_Disease_Status,D005,D019,D004,D047,D020,D024,D031,D052,D012,D007,D036
+For_DCC_postnatal_Age,1 Days,1 Days,5 Days,12 Days,24 Days,4 Months,7 Months,13 Months,24 Months,4 Years,8 Years
+age_in_days,1,1,5,12,24,120,210,390,730,1461,2922
+log2(age_days),0,0,2.321928095,3.584962501,4.584962501,6.906890596,7.714245518,8.607330314,9.511752654,10.51274046,11.51274046
+Sex,Male,Male,Male,Male,Male,Male,Male,Male,Male,Male,Male
+Overall_Quality_Assessment_-_Short,Very Good,Excellent,Good,Very Good,Very Good,Excellent,Excellent,Very Good,Excellent,Fair,Excellent
+CGA,40,Unk,41.7,37.7,Unk,Unk,Unk,Unk,Unk,Unk,Unk
+GA_at_Birth,39.85,37,41,36,41.14,Unk,Unk,Unk,Unk,Unk,Unk
+Donor_Disease_Status,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease,No known lung disease
+Disease_Status_Notes,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk
+Pathologist_Overall_Diagnostic_Impression_(RLL),"Normal structure and development
+Patchy mild atelectasis
+Mild autolysis","Normal structure and development
+Dilated airways with autolysis of bronchial epithelium
+Increased circulating hematopoietic cells
+Aspirated squames/meconium in termiUnkl airspaces","Normal structure and development with exception of mild to moderate muscularization of medium and small arteries, abnormal muscularization of intra aciUnkr vessels
+TermiUnkl aspiration","Normal growth and development
+Mild to moderate acute pneumonia
+Focal medial hypertrophy of pulmoUnkry arteries
+Punctate acute hemorrhage","Mild decreased alveolar count and lung/body weight <10%
+Patchy mild pulmoUnkry interstitial glycogenosis
+Medial hypertrophy of pulmoUnkry arteries
+Scattered hemosiderin deposition
+Single arterial thrombus","Mildly deficient alveolar count for age
+Mild periairway and interstitial lymphocytic inflammation with few airways and alveoli containing clusters of neutrophils
+Increased alveolar macrophages",Normal lung growth and lung structure,"Normal growth and development
+Patchy moderate to severe bronchopneumonia with mixed acute and chronic inflammation
+Increased  alveolar macrophages
+Few acute arterial thrombi","Patchy mild mixed inflammation, foamy macrophages, rare foreign material c/w aspiration				
+Variable prominent lymphoid aggregates 				
+Focal metaplastic bone","Normal structure and development	
+Patchy mild acute and chronic interstitial and intra alveolar inflammation	
+Scattered acute thrombi","Normal structure and development
+Mild to moderate bronchopneumonia with aspiration
+Focally prominent periairway eosinophilic inflammation
+Diffusely increased alveolar macrophages
+Arterial thrombus"
+Race,More than 1 race,White,White,White,Other,Other,White,Black/AA,White,Black/AA,White
+Cause_of_Death_(short_desc),Anencephaly-brain anomaly,Anencephaly-brain anomaly,"Uterine rupture, hypoxic-ischemic encephalopathy",CVA/Stroke thought likely non-traumatic,"Anoxia, periUnktal","Head Trauma, MVA","Anoxia, SIDS",MVA,Anoxia 2nd Drowning,Head Trauma Unknown cause,Head Trauma
+Cause_of_Death,Congenital Anomaly,Congenital Anomaly,Anoxic/Hypoxic Brain Injury,Trauma,Anoxic/Hypoxic Brain Injury,Trauma,Anoxic/Hypoxic Brain Injury,Trauma,Anoxic/Hypoxic Brain Injury,Trauma,Trauma
+Weight_(kg),2.87,Unk,3.63,3.3,4.08,8.62,7.26,9.5,19.5,15.42,34
+Weight_Percentile,17,Unk,63,71,55,94,8.2,32,100,17,89
+Total_Lung_Weight_(g),43.2,40.6,62.8,52.5,46.7,86.3,102,126.73,221.7,255,294.2
+"Displacement_Volume,_not_inflated_(ml)",50,60,100,60,40,140,160,250,400,350,750
+LLL_Weight_(g),10.3,9.2,13.2,11.8,10.1,20.4,26.1,35.49,54.4,45.9,62.33
+LLL_Displacement_Vol_(ml),Unk,10,Unk,14,10,20,30,40,80,100,90
+LLL_Volume_Infused_(ml),20,8,50,30,30,79,77,57,246,150,267.5
+LUL_Weight_(g),6,7.8,13.8,9.6,10.8,14.1,19.6,23.07,39,28.3,58.61
+LUL_Displacement_Vol_(ml),Unk,20,Unk,19,10,20,40,20,60,50,70
+LUL_Volume_Infused_(ml),7,15,30,31,25,Unk,73,39,147,110,142
+RLL_Weight_(g),11.8,11,15.1,13.4,10.7,18.6,27,30.56,65.9,52.7,88.5
+RLL_Displacement_Vol_(ml),Unk,20,Unk,16,10,20,40,40,110,200,130
+RLL_Volume_Infused_(ml),45,10,45,33,35,72,80,75,250,75,250
+RML_Weight_(g),8.6,4,8.4,5.2,12.3,9.4,9.8,12.3,20.3,13.6,24.43
+RML_Displacement_Vol_(ml),Unk,5,Unk,8,15,20,10,20,40,200,45
+RML_Volume_Infused_(ml),Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk
+RUL_Weight_(g),8.6,5.4,10.4,8.4,12.3,14.5,13.9,16.56,35.6,28.9,57.13
+RUL_Displacement_Vol_(ml),Unk,10,Unk,12,15,20,20,20,60,200,120
+RUL_Volume_Infused_(ml),Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk
+Trachea-Bronchus_Weight_(g),Unk,0.4,Unk,0.7,Unk,Unk,Unk,Unk,Unk,Unk,4.84
+Spleen_Weight_(g),Unk,Unk,Unk,Unk,Unk,Unk,17.3,Unk,5.9,6.9,Unk
+Thymus_Weight_(g),Unk,Unk,Unk,Unk,Unk,Unk,Unk,Unk,27.1000,Unk,Unk
+Height_(cm),Unk,Unk,53.34,60.96,50.8,71.12,71.12,76,96.52,104.14,132.08
+Height_Percentile,Unk,Unk,90,Unk,10,100,71,27,97,37,59
+BMI_Percentile,Unk,Unk,57,Unk,77,40,0.7,47,100,11,92
+Ponderal_Index,Unk,Unk,1.94,5.36,2.07,6.13,5.16,7.22,20.2,14.88,25.76
